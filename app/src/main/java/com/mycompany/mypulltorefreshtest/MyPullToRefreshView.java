@@ -13,9 +13,7 @@ import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-/**
- * Created by Lenovo on 2016/11/30.
- */
+
 public class MyPullToRefreshView extends LinearLayout implements View.OnTouchListener{
 
     //需要控制的View
@@ -90,7 +88,7 @@ public class MyPullToRefreshView extends LinearLayout implements View.OnTouchLis
      *
      * */
     public boolean onTouch(View view, MotionEvent event){
-        //如果在刷新，禁止一切
+        //如果在刷新，禁止一切手势
         if(mCurrentStatus == STATUS_REFRESHING){
             return true;
         }
@@ -116,8 +114,9 @@ public class MyPullToRefreshView extends LinearLayout implements View.OnTouchLis
                         mCurrentStatus = STATUS_REFRESH_FINISHED;
                         return false;
                     }
-                    //除了刷新状态，其他所有状态都要在move的时候移动header
+
                     if(mCurrentStatus != STATUS_REFRESHING){
+                        //移动header
                         mHeaderLayoutParams.topMargin = invisibleHeight + (distance / 2);
                         mHeader.setLayoutParams(mHeaderLayoutParams);
 
