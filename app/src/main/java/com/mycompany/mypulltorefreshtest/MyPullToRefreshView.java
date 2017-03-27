@@ -7,6 +7,7 @@ import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
+import android.view.Window;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.ProgressBar;
@@ -45,39 +46,39 @@ public class MyPullToRefreshView extends LinearLayout implements View.OnTouchLis
     private PullToRefreshListener mListener;
 
 
-
+    /*
+    * 初始化header并添加到LinearLayout中
+    *
+    * */
     public MyPullToRefreshView(Context context, AttributeSet attributeSet){
         super(context, attributeSet);
-        //由布局动态获取header
+        //获取header
         mHeader = LayoutInflater.from(context).inflate(R.layout.header, null, true);
         mHeaderProgressbar = (ProgressBar)mHeader.findViewById(R.id.header_progressbar);
         mHeaderTextView = (TextView)mHeader.findViewById(R.id.header_textview);
 
         touchSlop = ViewConfiguration.get(context).getScaledTouchSlop();
-
-        //给该组合View设置方向
+        //设置方向
         setOrientation(VERTICAL);
-        //添加header到该组合View中
+        //添加到第0个位置中
         addView(mHeader, 0);
     }
 
     /*
     *
-    * 作为一个继承LinearLayout的组合View，在此方法中需要管理子View的布局。
+    * 由于header是动态添加，这里重新布局
     *
     * */
     protected void onLayout(boolean changed, int l, int t, int r, int b){
         super.onLayout(changed, l, t, r, b);
         //只布局一次
         if(changed && !isLoaded){
-            //将header移出屏幕（toolbar的下界上面）
-            invisibleHeight = - mHeader.getHeight();
+            //将header移到整个ViewGroup的上面
+            invisibleHeight = - mHeader.getMeasuredHeight();
             mHeaderLayoutParams = (MarginLayoutParams)mHeader.getLayoutParams();
             mHeaderLayoutParams.topMargin = invisibleHeight;
             //mHeader.setLayoutParams(mHeaderLayoutParams);
-
             mListView = (ListView)getChildAt(1);
-            //给ListView注册监听者，这个监听者是这个组合View
             mListView.setOnTouchListener(this);
             isLoaded = true;
         }
@@ -89,7 +90,11 @@ public class MyPullToRefreshView extends LinearLayout implements View.OnTouchLis
      *
      * */
     public boolean onTouch(View view, MotionEvent event){
-        //判断是否能下拉
+        //如果在刷新，禁止一切
+        if(mCurrentStatus == STATUS_REFRESHING){
+            return true;
+        }
+        //每次触摸都要判断，当已经在下拉的时候一定返回true
         judgeIfAbleToPull(event);
         //如果能下拉
         if (ableToPull){
@@ -98,19 +103,25 @@ public class MyPullToRefreshView extends LinearLayout implements View.OnTouchLis
                     yDown = event.getRawY();
                     break;
                 case MotionEvent.ACTION_MOVE:
+                    //获取移动的差值
                     yMove = event.getRawY();
                     int distance = (int) (yMove - yDown);
-                    if(distance <= 0 && mHeaderLayoutParams.topMargin <= invisibleHeight)
-                        return false;
-                    if (distance < touchSlop)
-                        return false;
 
+                    //如果在能下拉的时候向上滑动了或者向上滑动到了原位
+                    if(distance <= 0 && mHeaderLayoutParams.topMargin <= invisibleHeight) {
+                        mCurrentStatus = STATUS_REFRESH_FINISHED;
+                        return false;
+                    }
+                    if (distance < touchSlop){
+                        mCurrentStatus = STATUS_REFRESH_FINISHED;
+                        return false;
+                    }
+                    //除了刷新状态，其他所有状态都要在move的时候移动header
                     if(mCurrentStatus != STATUS_REFRESHING){
-                        //实时滚动
-                        mHeaderLayoutParams.topMargin = (distance / 2) + invisibleHeight;
+                        mHeaderLayoutParams.topMargin = invisibleHeight + (distance / 2);
                         mHeader.setLayoutParams(mHeaderLayoutParams);
 
-                        //根据滚动的距离实时更改状态。
+                        //“继续下拉以刷新”和“释放即可刷新的分界点”，改变状态
                         if(mHeaderLayoutParams.topMargin > 0){
                             mCurrentStatus = STATUS_RELEASE_TO_REFRESH;
                         }else{
@@ -127,29 +138,38 @@ public class MyPullToRefreshView extends LinearLayout implements View.OnTouchLis
                     }
                     break;
             }
-            //在滑动中或释放后实时更新header
+            //在完成手势相应的动作后，如果当前状态处于这两个状态，可能伴随着header的更新。
             if(mCurrentStatus == STATUS_PULL_TO_REFRESH
                     || mCurrentStatus == STATUS_RELEASE_TO_REFRESH){
-
+                //检查更新
                 updateHeaderView();
                 mLastStatus = mCurrentStatus;
 
                 mListView.setPressed(false);
                 mListView.setFocusable(false);
                 mListView.setFocusableInTouchMode(false);
-                //当正在下拉时。消费手势，屏蔽掉Listview的点击事件
+                //当正在下拉时，消费手势，屏蔽掉Listview的点击事件。
                 return true;
             }
         }
+        //如果不能下拉，该ViewGroup不拦截Touch事件，Touch事件交给ListView处理
+        mCurrentStatus = STATUS_REFRESH_FINISHED;
         return false;
     }
 
+
+
+    /*
+    *
+    * 如果Up的时候是STATUS_RELEASE_TO_REFRESH，那么回滚到header上边界与ViewGroup上边界重合。
+    * */
     class RefreshingTask extends AsyncTask<Void, Integer, Integer>{
         @Override
         protected Integer doInBackground(Void... params){
             int topMargin = mHeaderLayoutParams.topMargin;
             while(true){
                 topMargin = topMargin + SCROLL_SPEED;
+                //回滚完成
                 if(topMargin <= 0){
                     topMargin = 0;
                     break;
@@ -162,14 +182,20 @@ public class MyPullToRefreshView extends LinearLayout implements View.OnTouchLis
                 }
             }
 
+            /*//回滚结束，在子线程中回调更新函数
+            publishProgress(topMargin);
+            if(mListener != null){
+                mListener.onRefresh();
+            }*/
             return topMargin;
         }
 
         protected void onProgressUpdate(Integer... topMargin){
-            //回滚的时候进度条就显示
+            //回滚的时候progressbar显示
             mCurrentStatus = STATUS_REFRESHING;
             updateHeaderView();
             mLastStatus = mCurrentStatus;
+
             mHeaderLayoutParams.topMargin = topMargin[0];
             mHeader.setLayoutParams(mHeaderLayoutParams);
         }
@@ -177,6 +203,7 @@ public class MyPullToRefreshView extends LinearLayout implements View.OnTouchLis
         protected void onPostExecute(Integer topMargin){
             mHeaderLayoutParams.topMargin = topMargin;
             mHeader.setLayoutParams(mHeaderLayoutParams);
+
             //回滚结束，开始在主线程中更新
             if(mListener != null){
                 mListener.onRefresh();
@@ -204,9 +231,9 @@ public class MyPullToRefreshView extends LinearLayout implements View.OnTouchLis
             return topMargin;
         }
         protected void onProgressUpdate(Integer... topMargin){
-            mCurrentStatus = STATUS_REFRESH_FINISHED;
+            /*mCurrentStatus = STATUS_REFRESH_FINISHED;
             updateHeaderView();
-            mLastStatus = mCurrentStatus;
+            mLastStatus = mCurrentStatus;*/
             mHeaderLayoutParams.topMargin = topMargin[0];
             mHeader.setLayoutParams(mHeaderLayoutParams);
         }
@@ -214,16 +241,21 @@ public class MyPullToRefreshView extends LinearLayout implements View.OnTouchLis
         protected void onPostExecute(Integer topMargin){
             mHeaderLayoutParams.topMargin = topMargin;
             mHeader.setLayoutParams(mHeaderLayoutParams);
+            mCurrentStatus = STATUS_REFRESH_FINISHED;
+            updateHeaderView();
+            mLastStatus = mCurrentStatus;
         }
     }
 
     private void judgeIfAbleToPull(MotionEvent event){
+        //根据ListView的源码，这里是获得显示在ListView上的第一个子View
         View firstChild = mListView.getChildAt(0);
         if(firstChild != null){
+            //获得ListView中第一个显示出的条目在所有数据中的位置
             int firstVisiblePos = mListView.getFirstVisiblePosition();
+            //如果是第0个条目而且第一个显示的条目的上边界和ListView的上边界重合
             if(firstVisiblePos == 0 && firstChild.getTop() == 0){
-                //这个地方十分重要，在不能下滑拉出header的时候，
-                //我们时刻更新手指的y坐标，直至能下滑的时的点当作下拉的起始点。
+                //在由不能到能下滑的时刻，记录下滑点的位置
                 if(!ableToPull){
                     yDown = event.getRawY();
                 }
@@ -241,6 +273,7 @@ public class MyPullToRefreshView extends LinearLayout implements View.OnTouchLis
     }
 
     private void updateHeaderView(){
+        //当上一个状态不等于现在的状态时，会进行header状态的更新
         if (mLastStatus != mCurrentStatus){
             if (mCurrentStatus == STATUS_REFRESHING) {
                 mHeaderProgressbar.setVisibility(View.VISIBLE);
