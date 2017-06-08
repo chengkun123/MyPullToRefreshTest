@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animation-list
+    android:oneshot="false"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable = "@mipmap/node_modules_jdreactcorelib_libraries_jdscrollview_images_app_refresh_people_1"
+          android:duration="70"/>
+    <item android:drawable= "@mipmap/node_modules_jdreactcorelib_libraries_jdscrollview_images_app_refresh_people_2"
+          android:duration="70"/>
+
+    <item android:drawable= "@mipmap/node_modules_jdreactcorelib_libraries_jdscrollview_images_app_refresh_people_3"
+          android:duration="70"/>
+</animation-list>

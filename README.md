@@ -1,10 +1,14 @@
 # MyPullToRefreshTest
 
-下拉刷新Demo，熟悉了自定义ViewGroup。
+这里放一些练习的Demo，记录它们关键的知识点以便回忆。
+
+## 1.下拉刷新
 
 - ViewGroup具有四种状态：
 
-  完成、继续下拉以刷新、释放以刷新、正在刷新，维护上一个状态和当前状态，如果状态不一样，会对header显示进行更新。
+  完成、继续下拉以刷新、释放以刷新、正在刷新，维护上一个状态和当前状态，如果状态不一样，会对header显示进行更新。状态转移图如下
+
+![StatusChange.png](https://github.com/chengkun123/MyPullToRefreshTest/raw/master/ScreenShots/StatusChange.png?raw=true)
 
 ~~~java
     private int mCurrentStatus = STATUS_REFRESH_FINISHED;
@@ -15,24 +19,40 @@
     public static final int STATUS_REFRESH_FINISHED = 3;
 ~~~
 
-- 在构造器中添加header布局，并在onLayout()中布局header和ListView，让header移出该ViewGroup。
-- 在onTouch()中首先判断是否可以下拉，判断的条件是：数据的第0条是否是显示在ListView的第一个item中、该item上边界是否与ViewGroup重合。
+- 在onTouch中利用header的`setLayoutparams()`方法形成滑动。
 
-~~~java
-View firstChild = mListView.getChildAt(0);
-        if(firstChild != null){
-            int firstVisiblePos = mListView.getFirstVisiblePosition();
-            if(firstVisiblePos == 0 && firstChild.getTop() == 0){
-~~~
-
-- 如果可以下拉，在onTouch()的ACTION_MOVE中下滑header形成下拉效果同时更新状态且更新header，ACTION_UP中根据不同的状态进行不同的动作（回滚回初始态或者刷新）。状态转移图如下：
-
-![StatusChange.png](https://github.com/chengkun123/MyPullToRefreshTest/blob/master/ScreenShots/StatusChange.png?raw=true)
 
 - 效果图：
 
 ![comenstration.gif](https://github.com/chengkun123/MyPullToRefreshTest/blob/master/ScreenShots/comenstration.gif?raw=true)
 
-- TO-DO:
+- 仿美团下拉刷新效果
 
-  尝试不同的header效果！
+  - 通过设置**可见性**在不同阶段显示不同的View。
+  - 根据下拉距离**改变Canvas大小实现缩放**效果。
+  - 把帧动画设为背景，**播放帧动画**。
+
+  ![meituan.gif](https://github.com/chengkun123/MyPullToRefreshTest/blob/master/ScreenShots/meituan.gif?raw=true)
+
+- 仿京东下拉效果
+
+  - 第一阶段的View，由于两个Bitmap的**缩放中心不一样**，使用`Canvas#save()`和`Canvas#restore()` 把两个Bitmap进行分别映射。
+  - 第二阶段的View播放无限循环帧动画。
+
+  ![jingdong.gif](https://github.com/chengkun123/MyPullToRefreshTest/blob/master/ScreenShots/jingdong.gif?raw=true)
+
+- 仿百度外卖下拉效果
+
+  - 对header中的view执行动画达到效果
+
+  - 在xml中编写的动画，set中默认自带如下属性，并且set中对interpolator的设置优先级高于单独动画对interpolator的设置。
+
+    ~~~xml
+    android:interpolator="@android:anim/accelerate_interpolator"
+    android:shareInterpolator="true"
+    ~~~
+
+    ​
+
+  ![baidu.gif](https://github.com/chengkun123/MyPullToRefreshTest/blob/master/ScreenShots/baidu.gif?raw=true)
+

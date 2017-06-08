@@ -1,4 +1,4 @@
-package com.mycompany.mypulltorefreshtest;
+package com.mycompany.mypulltorefreshtest.standardpull;
 
 import android.os.Handler;
 import android.os.Message;
@@ -8,6 +8,8 @@ import android.view.Window;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.Toast;
+
+import com.mycompany.mypulltorefreshtest.R;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -31,8 +33,6 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void handleMessage(Message msg) {
                 super.handleMessage(msg);
-                //setTitle("进行了刷新！");
-                //items[0] = "";
                 Toast.makeText(MainActivity.this, "进行了刷新", Toast.LENGTH_SHORT).show();
                 adapter.notifyDataSetChanged();
                 //更新完之后回滚,注意这里伴随着AsyncTask的初始化，必须在主线程中调用

@@ -1,4 +1,4 @@
-package com.mycompany.mypulltorefreshtest;
+package com.mycompany.mypulltorefreshtest.standardpull;
 
 import android.content.Context;
 import android.os.AsyncTask;
@@ -7,11 +7,12 @@ import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
-import android.view.Window;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+
+import com.mycompany.mypulltorefreshtest.R;
 
 
 public class MyPullToRefreshView extends LinearLayout implements View.OnTouchListener{
@@ -51,7 +52,7 @@ public class MyPullToRefreshView extends LinearLayout implements View.OnTouchLis
     public MyPullToRefreshView(Context context, AttributeSet attributeSet){
         super(context, attributeSet);
         //获取header
-        mHeader = LayoutInflater.from(context).inflate(R.layout.header, null, true);
+        mHeader = LayoutInflater.from(context).inflate(R.layout.header_main, null, true);
         mHeaderProgressbar = (ProgressBar)mHeader.findViewById(R.id.header_progressbar);
         mHeaderTextView = (TextView)mHeader.findViewById(R.id.header_textview);
 
@@ -88,7 +89,7 @@ public class MyPullToRefreshView extends LinearLayout implements View.OnTouchLis
      *
      * */
     public boolean onTouch(View view, MotionEvent event){
-        //如果在刷新，禁止一切手势
+        //如果在刷新，直接返回，禁止一切其他动作
         if(mCurrentStatus == STATUS_REFRESHING){
             return true;
         }
@@ -114,7 +115,9 @@ public class MyPullToRefreshView extends LinearLayout implements View.OnTouchLis
                         mCurrentStatus = STATUS_REFRESH_FINISHED;
                         return false;
                     }
-
+                    /*
+                    *
+                    * */
                     if(mCurrentStatus != STATUS_REFRESHING){
                         //移动header
                         mHeaderLayoutParams.topMargin = invisibleHeight + (distance / 2);

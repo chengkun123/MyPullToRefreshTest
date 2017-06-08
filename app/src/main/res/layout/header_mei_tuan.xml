@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:layout_width="match_parent"
+              android:layout_height="wrap_content"
+              android:gravity="center"
+              android:orientation="horizontal"
+
+    >
+    <com.mycompany.mypulltorefreshtest.meituanpull.MTFirstView
+
+        android:id="@+id/first_view"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="20dp"
+        />
+    <com.mycompany.mypulltorefreshtest.meituanpull.MTSecondView
+
+        android:id="@+id/second_view"
+        android:layout_width="wrap_content"
+        android:visibility="gone"
+        android:layout_marginLeft="20dp"
+        android:layout_height="wrap_content"
+        />
+    <com.mycompany.mypulltorefreshtest.meituanpull.MTThirdView
+
+        android:id="@+id/third_view"
+        android:layout_width="wrap_content"
+        android:visibility="gone"
+        android:layout_marginLeft="20dp"
+        android:layout_height="wrap_content"
+        />
+    <TextView
+        android:id="@+id/tv_pull_to_refresh"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="10dp"
+        android:text="继续下拉以刷新"
+        />
+
+</LinearLayout>
